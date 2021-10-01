@@ -1,0 +1,34 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"environmentName": {
+			"value": "WV-DevOps-AKS"
+		},
+		"GitHubFetcherWebServiceURI": {
+			"value": "https://gittokenapp.azurewebsites.net/api/gittokenapp"
+		},
+		"GitHubLocation": {
+			"value": "https://github.com/The-Digital-Collective/WV.Chosen.AKS.BankValidation.Service/blob/develop/WV.Chosen.AKS.BankValidation.AzureRG/child"
+		},
+		"GitHubAccessToken": {
+			"value": "83a03eee8d743bab8fd2617da83f4c2313eb3a12"
+		},
+		"publisherEmail": {
+			"value": "Publisher-Email"
+		},
+		"publisherName": {
+			"value": "Publisher-Name"
+		},
+	
+		"apim_SkuTier": {
+			"value": "Standard"
+		},
+		"apim_SkuCount": {
+			"value": 1
+		},
+		"ingressPublicIP": {
+			"value": 40.88.39.132
+		}
+}
+}

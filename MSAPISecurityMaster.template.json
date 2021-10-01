@@ -1,0 +1,66 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"environmentName": {
+			"type": "string"
+		},
+		"GitHubFetcherWebServiceURI": {
+			"type": "string"
+		},
+		"GitHubLocation": {
+			"type": "string"
+		},
+		"GitHubAccessToken": {
+			"type": "string"
+		},
+		"resourceGroup": {
+			"type": "string"
+		},
+		"location": {
+			"type": "string"
+		},
+		"networkSecurityGroupName": {
+			"type": "string"
+		}
+	},
+	"variables": {
+		"nestedAKSSecurityTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'AKS-Security.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"apiVersion": "2017-05-10",
+		"contentVersion": "1.0.0.0",
+		"mode": "Incremental",
+		"apiManagementServiceName": "[concat(parameters('environmentName'), '-apim')]",
+		"AKSSecurityTemplate": "AKSSecurityTemplate",
+		"apimResourceGroup": "[concat('MC-', parameters('environmentName'), '-RG')]"
+	},
+	"resources": [
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('AKSSecurityTemplate')]",
+			"resourceGroup": "[variables('apimResourceGroup')]",
+			"type": "Microsoft.Resources/deployments",
+			"dependsOn": [],
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedAKSSecurityTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"networkSecurityGroupName": {
+						"value": "[parameters('networkSecurityGroupName')]"
+					},
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"resourceGroup": {
+						"value": "[parameters('resourceGroup')]"
+					},
+					"location": {
+						"value": "[parameters('location')]"
+					}
+				}
+			}
+		}
+	]
+}

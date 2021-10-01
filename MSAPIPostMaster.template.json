@@ -1,0 +1,363 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"environmentName": {
+			"type": "string"
+		},
+		"GitHubFetcherWebServiceURI": {
+			"type": "string"
+		},
+		"GitHubLocation": {
+			"type": "string"
+		},
+		"GitHubAccessToken": {
+			"type": "string"
+		},
+		"publisherEmail": {
+			"type": "string"
+		},
+		"publisherName": {
+			"type": "string"
+		},
+		
+		"apim_SkuTier": {
+			"type": "string"
+		},
+		"apim_SkuCount": {
+			"type": "int"
+		},
+		"ingressPublicIP": {
+			"type": "int"
+		}
+	},
+	"variables": {
+		"nestedServiceTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'service.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedUserTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'user.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedGroupsTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'groups.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedUserGroupTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'groupsUsers.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedProductTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'product.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedProductPolicyTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'productPolicy.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedProductGroupTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'productGroup.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedAPITemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'postapiv1.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedAPIProductTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'postapiv1Product.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedAPIPolicyTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'postapiv1Policy.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedAPIOperationTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'postapiv1Operation.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"apiVersion": "2017-05-10",
+		"contentVersion": "1.0.0.0",
+		"mode": "Incremental",
+		
+		"clusterenv": "[replace(parameters('environmentName'), '-', '')]",
+		"clusterName": "[toLower(concat(variables('clusterenv'), 'cluster'))]",
+		"apiManagementServiceName": "[concat(parameters('environmentName'), '-apim')]",
+		"location": "[resourceGroup().location]",
+		"publisherEmail": "[parameters('publisherEmail')]",
+		"publisherName": "[parameters('publisherName')]",
+		"serviceUrl": "[concat('http://', parameters('ingressPublicIP'), ':80/bankvalidation-msapi/')]",
+		"swaggerUrl": "[concat(variables('serviceUrl'), 'swagger/V2/swagger.json')]",
+		"wvName": "wv",
+		"newUser": "[concat(parameters('environmentName'), '-user', '-',  variables('wvName'))]",
+		"newGroup": "[concat(parameters('environmentName'), '-group', '-', variables('wvName'))]",
+		"productName": "[concat(parameters('environmentName'), '-', variables('wvName'), 'product')]",
+		"apiName": "worldvision-chosen-bankvalidationservice",
+		"pathName": "bankvalidation",
+		"serviceTemplate": "serviceTemplate",
+		"usersTemplate": "usersTemplate",
+		"groupsTemplate": "groupsTemplate",
+		"userGroupTemplate": "userGroupTemplate",
+		"productTemplate": "productTemplate",
+		"productPolicyTemplate": "productPolicyTemplate",
+		"productGroupTemplate": "productGroupTemplate",
+		"apiTemplate": "apiTemplate",
+		"apiProductTemplate": "apiProductTemplate",
+		"apiPolicyTemplate": "apiPolicyTemplate",
+		"apiOperationTemplate": "apiOperationTemplate"
+	},
+	"resources": [
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('serviceTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedServiceTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"publisherName": {
+						"value": "[variables('publisherName')]"
+					},
+					"publisherEmail": {
+						"value": "[variables('publisherEmail')]"
+					},
+					"location": {
+						"value": "[variables('location')]"
+					},
+					"sku": {
+						"value": "[parameters('apim_SkuTier')]"
+					},
+					"skuCount": {
+						"value": "[parameters('apim_SkuCount')]"
+					}
+				}
+			}
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('usersTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedUserTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"newUser": {
+						"value": "[variables('newUser')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('serviceTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('groupsTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedGroupsTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"newGroup": {
+						"value": "[variables('newGroup')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('serviceTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('userGroupTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedUserGroupTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"newGroup": {
+						"value": "[variables('newGroup')]"
+					},
+					"newUser": {
+						"value": "[variables('newUser')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('groupsTemplate'))]",
+				"[resourceId('Microsoft.Resources/deployments', variables('usersTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('productTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedProductTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"productName": {
+						"value": "[variables('productName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('serviceTemplate'))]",
+				"[resourceId('Microsoft.Resources/deployments', variables('groupsTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('productPolicyTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedProductPolicyTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"productName": {
+						"value": "[variables('productName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('productTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('productGroupTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedProductGroupTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"productName": {
+						"value": "[variables('productName')]"
+					},
+					"newGroup": {
+						"value": "[variables('newGroup')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('productTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('apiTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedAPITemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"serviceUrl": {
+						"value": "[variables('serviceUrl')]"
+					},
+					"contentValue": {
+						"value": "[variables('swaggerUrl')]"
+					},
+					"apiName": {
+						"value": "[variables('apiName')]"
+					},
+					"pathName": {
+						"value": "[variables('pathName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('productTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('apiProductTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedAPIProductTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"productName": {
+						"value": "[variables('productName')]"
+					},
+					"apiName": {
+						"value": "[variables('apiName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('apiTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('apiPolicyTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedAPIPolicyTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"apiName": {
+						"value": "[variables('apiName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('apiTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('apiOperationTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedAPIOperationTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"apiName": {
+						"value": "[variables('apiName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('apiTemplate'))]"
+			]
+		}
+	],
+	"outputs": {
+		
+	}
+}

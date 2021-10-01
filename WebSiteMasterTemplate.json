@@ -1,0 +1,353 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"environmentName": {
+			"type": "string"
+		},
+		"GitHubFetcherWebServiceURI": {
+			"type": "string"
+		},
+		"GitHubLocation": {
+			"type": "string"
+		},
+		"GitHubAccessToken": {
+			"type": "string"
+		},
+		"osDiskSizeGB": {
+			"type": "int",
+			"maxValue": 1023,
+			"minValue": 0,
+			"metadata": {
+				"description": "Disk size (in GB) to provision for each of the agent pool nodes. This value ranges from 0 to 1023. Specifying 0 will apply the default disk size for that agentVMSize."
+			}
+		},
+		"agentCount": {
+			"type": "int",
+			"maxValue": 50,
+			"minValue": 1,
+			"metadata": {
+				"description": "The number of nodes for the cluster."
+			}
+		},
+		"agentVMSize": {
+			"type": "string",
+			"metadata": {
+				"description": "The size of the Virtual Machine."
+			}
+		},
+		"osType": {
+			"type": "string",
+			"allowedValues": [
+				"Linux",
+				"Windows"
+			],
+			"metadata": {
+				"description": "The type of operating system."
+			}
+		},
+		"publisherEmail": {
+			"type": "string"
+		},
+		"publisherName": {
+			"type": "string"
+		},
+		
+		"apim_SkuTier": {
+			"type": "string"
+		},
+		"apim_SkuCount": {
+			"type": "int"
+		}
+	},
+	"variables": {
+		"nestedVirtualNetworkTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'deployVirtualNetworks.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedAKSTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'deployAKS.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedServiceTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'service.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedUserTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'user.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedGroupsTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'groups.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedUserGroupTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'groupsUsers.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedProductTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'product.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedProductPolicyTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'productPolicy.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"nestedProductGroupTemplateFile": "[concat(parameters('GitHubFetcherWebServiceURI'), '?githuburi=', parameters('GitHubLocation'), '/', 'productGroup.template.json', '&githubaccesstoken=', parameters('GitHubAccessToken'))]",
+		"apiVersion": "2017-05-10",
+		"contentVersion": "1.0.0.0",
+		"mode": "Incremental",
+		
+                "apiManagementServiceName": "[concat(parameters('environmentName'), '-apim')]",
+		"location": "[resourceGroup().location]",
+		"publisherEmail": "[parameters('publisherEmail')]",
+		"publisherName": "[parameters('publisherName')]",
+		"wvName": "wv",
+		"newUser": "[concat(parameters('environmentName'), '-user', '-',  variables('wvName'))]",
+		"newGroup": "[concat(parameters('environmentName'), '-group', '-', variables('wvName'))]",
+		"productName": "[concat(parameters('environmentName'), '-', variables('wvName'), 'product')]",
+		"serviceTemplate": "serviceTemplate",
+		"usersTemplate": "usersTemplate",
+		"groupsTemplate": "groupsTemplate",
+		"userGroupTemplate": "userGroupTemplate",
+		"productTemplate": "productTemplate",
+		"productPolicyTemplate": "productPolicyTemplate",
+		"productGroupTemplate": "productGroupTemplate",
+
+		"environmentNameReplace": "[replace(parameters('environmentName'), '-', '')]",
+		
+		"virtualNetWorkName": "[toLower(concat(parameters('environmentName'), '-vnet'))]",
+		"subNetName": "[toLower(concat(parameters('environmentName'), '-subnet'))]",
+		"nodeResourceGroup": "[concat('MC-', parameters('environmentName'), '-RG')]",
+		
+		"clusterName": "[toLower(concat(parameters('environmentName'), '-cluster'))]",
+		"dnsPrefix": "[toLower(concat(parameters('environmentName'), '-dns'))]",
+		
+		"vnetSubnetID": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetWorkName'), variables('subNetName'))]",
+		"virtualNetworkTemplate": "virtualNetworkTemplate",
+		"aksTemplate": "aksTemplate"
+	},
+	"resources": [
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('virtualNetworkTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedVirtualNetworkTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"location": {
+						"value": "[variables('location')]"
+					},
+					"virtualNetWorkName": {
+						"value": "[variables('virtualNetWorkName')]"
+					},
+					"subNetName": {
+						"value": "[variables('subNetName')]"
+					}
+				}
+			}
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('aksTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"dependsOn": [
+				"[variables('virtualNetworkTemplate')]"
+			],
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedAKSTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"location": {
+						"value": "[variables('location')]"
+					},
+					"clusterName": {
+						"value": "[variables('clusterName')]"
+					},
+					"dnsPrefix": {
+						"value": "[variables('dnsPrefix')]"
+					},
+					"osDiskSizeGB": {
+						"value": "[parameters('osDiskSizeGB')]"
+					},
+					"agentCount": {
+						"value": "[parameters('agentCount')]"
+					},
+					"agentVMSize": {
+						"value": "[parameters('agentVMSize')]"
+					},
+					"osType": {
+						"value": "[parameters('osType')]"
+					},
+					"vnetSubnetID": {
+						"value": "[variables('vnetSubnetID')]"
+					},
+					"nodeResourceGroup": {
+						"value": "[variables('nodeResourceGroup')]"
+					}
+				}
+			}
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('serviceTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedServiceTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"publisherName": {
+						"value": "[variables('publisherName')]"
+					},
+					"publisherEmail": {
+						"value": "[variables('publisherEmail')]"
+					},
+					"location": {
+						"value": "[variables('location')]"
+					},
+					"sku": {
+						"value": "[parameters('apim_SkuTier')]"
+					},
+					"skuCount": {
+						"value": "[parameters('apim_SkuCount')]"
+					}
+				}
+			}
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('usersTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedUserTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"newUser": {
+						"value": "[variables('newUser')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('serviceTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('groupsTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedGroupsTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"newGroup": {
+						"value": "[variables('newGroup')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('serviceTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('userGroupTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedUserGroupTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"newGroup": {
+						"value": "[variables('newGroup')]"
+					},
+					"newUser": {
+						"value": "[variables('newUser')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('groupsTemplate'))]",
+				"[resourceId('Microsoft.Resources/deployments', variables('usersTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('productTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedProductTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"productName": {
+						"value": "[variables('productName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('serviceTemplate'))]",
+				"[resourceId('Microsoft.Resources/deployments', variables('groupsTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('productPolicyTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedProductPolicyTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"productName": {
+						"value": "[variables('productName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('productTemplate'))]"
+			]
+		},
+		{
+			"apiVersion": "[variables('apiVersion')]",
+			"name": "[variables('productGroupTemplate')]",
+			"type": "Microsoft.Resources/deployments",
+			"properties": {
+				"mode": "[variables('mode')]",
+				"templateLink": {
+					"uri": "[variables('nestedProductGroupTemplateFile')]",
+					"contentVersion": "[variables('contentVersion')]"
+				},
+				"parameters": {
+					"apiManagementServiceName": {
+						"value": "[variables('apiManagementServiceName')]"
+					},
+					"productName": {
+						"value": "[variables('productName')]"
+					},
+					"newGroup": {
+						"value": "[variables('newGroup')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', variables('productTemplate'))]"
+			]
+		}
+	]
+}
